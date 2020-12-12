@@ -38,5 +38,6 @@ namespace WarehouseManagementSystem.Server.Data
         public DbSet<U_Channel> Channels { get; set; }
         public DbSet<Group_Codes> Group_Codes { get; set; }
         public DbSet<Payment_Terms> Payment_Terms { get; set; }
+        public DbSet<Uploads> Upload { get; set; }
     }
 }
