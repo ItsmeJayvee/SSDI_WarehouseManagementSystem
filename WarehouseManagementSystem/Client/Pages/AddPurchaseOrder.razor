@@ -1,0 +1,67 @@
+﻿@page "/addpurchaseorder"
+@using Microsoft.AspNetCore.SignalR.Client
+@using WarehouseManagementSystem.Shared
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h2>Add new purchase order</h2>
+<hr />
+<form>
+    <div class="row">
+        <div class="col-md-8">
+            <div class="form-group">
+                <label for="postingdate" class="control-label">Article Document</label>
+                <input form="postingdate" class="form-control" @bind="@po.Article_Doc" />
+            </div>
+            <div class="form-group">
+                <label for="docdate" class="control-label">Bill Document</label>
+                <input form="docdate" class="form-control" @bind="@po.Bill_Doc" />
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="form-group">
+                <input type="button" class="btn btn-success" @onclick="@addpurchaseorder" value="Save" />
+                <input type="button" class="btn btn-danger" @onclick="@cancel" value="Cancel" />
+            </div>
+        </div>
+    </div>
+</form>
+
+@code {
+    PurchaseHeaders po = new PurchaseHeaders();
+
+    private HubConnection hubCon;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubCon = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/ProjectHub"))
+            .Build();
+
+        await hubCon.StartAsync();
+    }
+
+    public bool IsConnected =>
+        hubCon.State == HubConnectionState.Connected;
+
+    public async Task addpurchaseorder()
+    {
+        await Http.PostJsonAsync("api/PurchaseOrderHeadersIndex", po);
+        if (IsConnected) await SendMessage();
+        NavigationManager.NavigateTo("editpurchaseorder/" + po.Article_Doc);
+    }
+
+    Task SendMessage() => hubCon.SendAsync("SendMessage");
+
+    void cancel()
+    {
+        NavigationManager.NavigateTo("purchaseorderlist");
+    }
+
+    public void Dispose()
+    {
+        _ = hubCon.DisposeAsync();
+    }
+}

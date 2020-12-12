@@ -1,0 +1,45 @@
+﻿@page "/editdeliveryreceipt"
+@using Microsoft.AspNetCore.SignalR.Client
+@using WarehouseManagementSystem.Shared
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h2>Edit delivery receipt</h2>
+<hr />
+
+@code {
+    DeliveryReceipt dr = new DeliveryReceipt();
+
+    private HubConnection hubCon;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubCon = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/ProjectHub"))
+            .Build();
+
+        await hubCon.StartAsync();
+    }
+
+    public bool IsConnected =>
+    hubCon.State == HubConnectionState.Connected;
+
+    public async Task adddeliveryreceipt()
+    {
+        await Http.PostJsonAsync("api/DeliveryReceipts", dr);
+        if (IsConnected) await SendMessage();
+        NavigationManager.NavigateTo("deliveryreceiptlist");
+    }
+
+    Task SendMessage() => hubCon.SendAsync("SendMessage");
+
+    void cancel()
+    {
+        NavigationManager.NavigateTo("deliveryreceiptlist");
+    }
+
+    public void Dispose()
+    {
+        _ = hubCon.DisposeAsync();
+    }
+}

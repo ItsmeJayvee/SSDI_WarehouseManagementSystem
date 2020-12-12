@@ -1,0 +1,117 @@
+﻿@page "/articlelist"
+@using Microsoft.AspNetCore.SignalR.Client
+@using WarehouseManagementSystem.Shared
+@using System.Text.Json
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h2>Article Master</h2>
+<hr />
+<a href="/addarticle" class="btn btn-primary">Create new article</a>
+<hr />
+<div class="form-inline">
+    <label class="sr-only" for="search-ordernumber">Search</label>
+    <input type="text" class="form-control mb-2 mr-sm-2" @bind="searcharticle" placeholder="Search article code" />
+    <button type="button" class="btn btn-primary mr-sm-2 mb-2" @onclick="Search">Search</button>
+</div>
+@if (amlist == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="font-size: small;">ID</th>
+                <th style="font-size: small;">Article Code</th>
+                <th style="font-size: small;">Article Description</th>
+                <th> </th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var art in amlist)
+            {
+                <tr>
+                    <td style="font-size: small;">@art.id</td>
+                    <td style="font-size: small;">@art.Article_Code</td>
+                    <td style="font-size: small;">@art.Article_Description</td>
+                    <td>
+                        <a style="font-size: small;" href="/editarticle/@art.id" class="btn-sm btn-primary">Edit</a>
+                        <a style="font-size: small;" href="/deletearticle/@art.id" class="btn-sm btn-danger">Delete</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <Pagination TotalPagesQuantity="totalPageQuantity" CurrentPage="currentPage" Radius="2" SelectedPage="SelectedPage"></Pagination>
+}
+
+@code {
+    ArticleMaster[] amlist;
+
+    private int totalPageQuantity;
+    private int currentPage = 1;
+    private string searcharticle = string.Empty;
+
+    private HubConnection hubCon;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubCon = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/ProjectHub"))
+            .Build();
+
+        hubCon.On("ReceiveMessage", () =>
+        {
+            CallLoadData();
+            StateHasChanged();
+        });
+
+        await hubCon.StartAsync();
+        await LoadData();
+    }
+
+    private void CallLoadData()
+    {
+        Task.Run(async () =>
+        {
+            await LoadData();
+        });
+    }
+
+    private async Task SelectedPage(int page)
+    {
+        currentPage = page;
+        await LoadData(page);
+    }
+
+    private async Task Search()
+    {
+        currentPage = 1;
+        await LoadData();
+    }
+
+    protected async Task LoadData(int page = 1, int quantityPerPage = 10)
+    {
+        var httpResponse = await Http.GetAsync($"api/ArticleMasters?page={page}&quantityPerPage={quantityPerPage}&article={searcharticle}");
+
+        if (httpResponse.IsSuccessStatusCode)
+        {
+            totalPageQuantity = int.Parse(httpResponse.Headers.GetValues("pagesQuantity").FirstOrDefault());
+            var responseString = await httpResponse.Content.ReadAsStringAsync();
+            amlist = JsonSerializer.Deserialize<ArticleMaster[]>(responseString,
+                new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
+            StateHasChanged();
+        }
+        else
+        {
+            //Error handler
+        }
+    }
+
+    public void Dispose()
+    {
+        _ = hubCon.DisposeAsync();
+    }
+}

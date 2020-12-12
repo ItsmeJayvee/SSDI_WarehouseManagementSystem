@@ -1,0 +1,163 @@
+﻿@page "/addsalesorder"
+@using Microsoft.AspNetCore.SignalR.Client
+@using WarehouseManagementSystem.Shared
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h2>Add new sales order</h2>
+<hr />
+<form>
+    <div class="row">
+        <div class="col-md-2">
+            <div class="form-group">
+                <label for="routeno" class="control-label">Route number</label>
+                <input form="routeno" class="form-control" @bind="@solist.Route_No" />
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="form-group">
+                <label for="ordertype" class="control-label">Order type</label>
+                <input form="ordertype" class="form-control" @bind="@solist.Order_Type" />
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="form-group">
+                <label for="orderno" class="control-label">Order number</label>
+                <input form="orderno" class="form-control" @bind="@solist.Order_Number" />
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="form-group">
+                <label for="sodate" class="control-label">Sales order date</label>
+                <input form="sodate" class="form-control" type="date" @bind="@date" />
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="form-group">
+                <label for="outletcode" class="control-label">Outlet code</label>
+                <input form="outletcode" class="form-control" @bind="@solist.Outlet_Code" />
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="form-group">
+                <label for="outletname" class="control-label">Outlet name</label>
+                <input form="outletname" class="form-control" @bind="@solist.Outlet_Name" />
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="form-group">
+                <label for="status" class="control-label">Status</label>
+                <input form="status" class="form-control" @bind="@solist.Status" />
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="form-group">
+                <label for="deliveryno" class="control-label">Delivery number</label>
+                <input form="deliveryno" class="form-control" @bind="@solist.Delivery_N" />
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="form-group">
+                <label for="routetype" class="control-label">Route type</label>
+                <input form="routetype" class="form-control" @bind="@solist.Route_Type" />
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="form-group">
+                <label for="salesmanname" class="control-label">Salesman name</label>
+                <input form="salesmanname" class="form-control" @bind="@solist.Salesman_Name" />
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="form-group">
+                <label for="termsofpayment" class="control-label">Terms of payment</label>
+                <input form="termsofpayment" class="form-control" @bind="@solist.Terms_of_payment" />
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="form-group">
+                <label for="dfqcs" class="control-label">Delivery free qty cs</label>
+                <input form="dfqcs" class="form-control" @bind="@solist.Delivery_Free_Qty_CS" />
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="form-group">
+                <label for="turnoverval" class="control-label">Turnover value</label>
+                <input form="turnoverval" class="form-control" @bind="@solist.Turnover_Value" />
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="form-group">
+                <label for="dfqpc" class="control-label">Delivery free qty pc</label>
+                <input form="dfqpc" class="form-control" @bind="@solist.Delivery_Free_Qty_PC" />
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="form-group">
+                <label for="doccat" class="control-label">Document category</label>
+                <input form="doccat" class="form-control" @bind="@solist.Document_Category" />
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="form-group">
+                <label for="salesman" class="control-label">Salesman</label>
+                <input form="salesman" class="form-control" @bind="@solist.Salesman" />
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="form-group">
+                <label for="ordertypedesc" class="control-label">Order type description</label>
+                <input form="ordertypedesc" class="form-control" @bind="@solist.Order_Type_Desc" />
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="form-group">
+                <input type="button" class="btn btn-success" @onclick="@addsalesorder" value="Save" />
+                <input type="button" class="btn btn-danger" @onclick="@cancel" value="Cancel" />
+            </div>
+        </div>
+    </div>
+</form>
+
+@code {
+    SalesOrder solist = new SalesOrder();
+
+    public DateTime date { get; set; }
+
+    private HubConnection hubCon;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubCon = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/ProjectHub"))
+            .Build();
+
+        await hubCon.StartAsync();
+    }
+
+    public bool IsConnected =>
+            hubCon.State == HubConnectionState.Connected;
+
+    public async Task addsalesorder()
+    {
+        date = Convert.ToDateTime(DateTime.Now.ToShortDateString());
+
+        var addSOHeader = new SalesOrderHeaders { Route_Type = solist.Route_Type, Salesman_Name = solist.Salesman_Name, Terms_of_payment = solist.Terms_of_payment, Delivery_Free_Qty_CS = solist.Delivery_Free_Qty_CS, Turnover_Value = solist.Turnover_Value, Delivery_Free_Qty_PC = solist.Delivery_Free_Qty_PC, Document_Category = solist.Document_Category, Salesman = solist.Salesman, Order_Type = solist.Order_Type, Route_No = solist.Route_No, Order_Type_Desc = solist.Order_Type_Desc, Order_Number = solist.Order_Number, SO_Date = date, Outlet_Code = solist.Outlet_Code, Outlet_Name = solist.Outlet_Name, Status = solist.Status, Delivery_N = solist.Delivery_N };
+        await Http.PostJsonAsync("api/SalesOrderHeadersIndex", addSOHeader);
+
+        if (IsConnected) await SendMessage();
+        NavigationManager.NavigateTo("editsalesorder/" + solist.Order_Number);
+    }
+
+    Task SendMessage() => hubCon.SendAsync("SendMessage");
+
+    void cancel()
+    {
+        NavigationManager.NavigateTo("salesorderlist");
+    }
+
+    public void Dispose()
+    {
+        _ = hubCon.DisposeAsync();
+    }
+}

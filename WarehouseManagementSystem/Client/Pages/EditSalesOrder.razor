@@ -1,0 +1,222 @@
+﻿@page "/editsalesorder/{id}"
+@using Microsoft.AspNetCore.SignalR.Client
+@using WarehouseManagementSystem.Shared
+@using System.Text.Json
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h2>Sales order</h2>
+<hr />
+<p>Order number: <b>@solist.Order_Number</b></p>
+<p>Order type: @solist.Order_Type_Desc</p>
+<p>Date: @solist.SO_Date.ToShortDateString()</p>
+<hr />
+<table class="table">
+    <thead>
+        <tr>
+            <th>Item number</th>
+            <th>Item description</th>
+            <th>Cases</th>
+            <th>Pieces</th>
+            <th>Free CS</th>
+            <th>Free PC</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (sod == null)
+        {
+            <p><em>Loading</em></p>
+        }
+        else
+        {
+            @foreach (var items in sod)
+            {
+                <tr>
+                    <td style="font-size: small;">@items.Material_N</td>
+                    <td style="font-size: small;">@items.Article_Description</td>
+                    <td style="font-size: small;">@items.Cases</td>
+                    <td style="font-size: small;">@items.Pieces</td>
+                    <td style="font-size: small;">@items.Free_Cases</td>
+                    <td style="font-size: small;">@items.Free_Piece</td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+<hr />
+<div class="container">
+    <div class="row">
+        <div class="text-left col-md-12">
+            <h6><b>Insert sales order Details:</b></h6>
+        </div>
+        <div class="form-inline">
+            <label class="sr-only" for="search-ordernumber">Search</label>
+            <input type="text" class="form-control mb-2 mr-sm-2" @bind="searchitemnum" placeholder="Search item number" />
+            <button type="button" class="btn btn-primary mr-sm-2 mb-2" @onclick="Search">Search</button>
+        </div>
+        <div class="col-md-12">
+            <hr />
+            <form>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="materialn" class="control-label" style="font-size: small;">Material Number</label>
+                            <input form="materialn" class="form-control" @bind="@artmas.Article_Code" />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="artdesc" class="control-label" style="font-size: small;">Article Description</label>
+                            <input form="artdesc" class="form-control" @bind="@artmas.Article_Description" />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="packsize" class="control-label" style="font-size: small;">Pack Size</label>
+                            <input form="packsize" class="form-control" @bind="@artmas.Unit_Conversion2" />
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="cs" class="control-label" style="font-size: small;">Cases</label>
+                            <input form="cs" class="form-control" @bind="@cases" />
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="pcs" class="control-label" style="font-size: small;">Pieces</label>
+                            <input form="pcs" class="form-control" @bind="@pieces" />
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="fcs" class="control-label" style="font-size: small;">Free Cases</label>
+                            <input form="fcs" class="form-control" @bind="@free_cases" />
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="fpcs" class="control-label" style="font-size: small;">Free Pieces</label>
+                            <input form="fpcs" class="form-control" @bind="@free_pieces" />
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <input form="discount" type="hidden" class="form-control" @bind="@disc.Discount_Amount" />
+                            <input form="discount" type="hidden" class="form-control" @bind="@bp.Delivering_Site" />
+                            <input form="discount" type="hidden" class="form-control" @bind="@bp.Delivering_Site_Description" />
+                        </div>
+                    </div>
+                    <div class="col-md-12 text-center">
+                        <button type="button" class="btn btn-primary mr-sm-2 mb-2" @onclick="@SaveDetails">Save</button>
+                        <button type="button" class="btn btn-danger mr-sm-2 mb-2" @onclick="@cancel">Cancel</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@code {
+
+    ArticleMaster artmas = new ArticleMaster();
+    SalesOrderHeaders solist = new SalesOrderHeaders();
+    Discount disc = new Discount();
+    BusinessPartner bp = new BusinessPartner();
+    SalesOrderDetails[] sod;
+
+    private HubConnection hubCon;
+
+    public int cases { get; set; } = 0;
+    public int pieces { get; set; } = 0;
+    public int free_cases { get; set; } = 0;
+    public int free_pieces { get; set; } = 0;
+    public string searchitemnum { get; set; }
+    public decimal cs { get; set; }
+    public decimal pc { get; set; }
+    public decimal size { get; set; }
+    public decimal amount { get; set; }
+    public decimal sales { get; set; }
+    public decimal vat { get; set; }
+    public decimal net { get; set; }
+    public decimal discount { get; set; }
+    public decimal discountAmount { get; set; }
+
+    [Parameter]
+    public string id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        solist = await Http.GetJsonAsync<SalesOrderHeaders>("api/SalesOrderHeadersIndex/" + id);
+        sod = await Http.GetJsonAsync<SalesOrderDetails[]>("api/SalesOrderDetailsIndex/" + solist.ID);
+        disc = await Http.GetJsonAsync<Discount>("api/Discounts/" + solist.Outlet_Code);
+        bp = await Http.GetJsonAsync<BusinessPartner>("api/BusinessPartners/getbp/" + solist.Outlet_Code);
+
+        hubCon = new HubConnectionBuilder()
+        .WithUrl(NavigationManager.ToAbsoluteUri("/ProjectHub"))
+        .Build();
+
+        await hubCon.StartAsync();
+    }
+
+    public bool IsConnected =>
+        hubCon.State == HubConnectionState.Connected;
+
+    private async Task Search()
+    {
+        artmas = await Http.GetJsonAsync<ArticleMaster>("api/ArticleMasters/" + searchitemnum);
+        this.StateHasChanged();
+    }
+
+    void cancel()
+    {
+        NavigationManager.NavigateTo("salesorderlist");
+    }
+
+    private async Task SaveDetails()
+    {
+        discountAmount = disc.Discount_Amount / 100;
+        cs = Convert.ToDecimal(cases);
+        pc = Convert.ToDecimal(pieces);
+        size = Convert.ToDecimal(artmas.Unit_Conversion2);
+        amount = Convert.ToDecimal(artmas.Secondary_Price_CS);
+        sales = (cs * amount) + ((amount / size) * pc);
+        discount = ((cs * amount) * discountAmount) + (((amount / size) * pc) * discountAmount);
+        vat = ((cs * amount) * Convert.ToDecimal(0.12)) + (((amount / size) * pc) * Convert.ToDecimal(0.12));
+        net = (sales + vat) - discount;
+
+        var salesOrderDetails = new SalesOrderDetails { Header_ID = solist.ID, Material_N = artmas.Article_Code, Article_Description = artmas.Article_Description, Pack_Size = artmas.Unit_Conversion2, Cases = Convert.ToString(cases), Pieces = Convert.ToString(pieces), Free_Cases = Convert.ToString(free_cases), Free_Piece = Convert.ToString(free_pieces), Delivery_Qty_CS = Convert.ToString(cases), Delivery_Qty_PC = Convert.ToString(pieces), Sales_Value = sales, VAT_Value = vat, Net_Sales = net, Cases_Pieces = cases + "/" + pieces, Free_CS_PS = free_cases + "/" + free_pieces };
+        await Http.PostJsonAsync("api/SalesOrderDetailsIndex", salesOrderDetails);
+
+        var InsertInventoryHeaders = new InventoryHeader { Date = Convert.ToDateTime(DateTime.Now.ToShortDateString()), Item_Code = artmas.Article_Code, Ref_ID = "Sales Order" };
+        await Http.PostJsonAsync("api/InventoryHeaderIndex/" + artmas.Article_Code, InsertInventoryHeaders);
+
+        if (cases == 0)
+        {
+            var InsertInventory = new Inventory { Date = Convert.ToDateTime(DateTime.Now.ToShortDateString()), Item_Code = artmas.Article_Code, Quantity = -pieces, Transaction_Type = "Sales Order", Uom = "PC", Warehouse = bp.Delivering_Site, Location = bp.Delivering_Site_Description };
+            await Http.PostJsonAsync("api/Inventory", InsertInventory);
+
+            var InsertInventoryDetails = new InventoryDetails { Header_Ref = artmas.Article_Code, Quantity = -pieces, Transaction_Type = "Sales Order", Uom = "PC", Warehouse = bp.Delivering_Site, Location = bp.Delivering_Site_Description };
+            await Http.PostJsonAsync("api/InventoryDetailsManual", InsertInventoryDetails);
+        }
+        else
+        {
+            var InsertInventory = new Inventory { Date = Convert.ToDateTime(DateTime.Now.ToShortDateString()), Item_Code = artmas.Article_Code, Quantity = -cases, Transaction_Type = "Sales Order", Uom = "CS", Warehouse = bp.Delivering_Site, Location = bp.Delivering_Site_Description };
+            await Http.PostJsonAsync("api/Inventory", InsertInventory);
+
+            var InsertInventoryDetails = new InventoryDetails { Header_Ref = artmas.Article_Code, Quantity = -cases, Transaction_Type = "Sales Order", Uom = "CS", Warehouse = bp.Delivering_Site, Location = bp.Delivering_Site_Description };
+            await Http.PostJsonAsync("api/InventoryDetailsManual", InsertInventoryDetails);
+        }
+
+
+        if (IsConnected) await SendMessage();
+        this.StateHasChanged();
+        NavigationManager.NavigateTo("refresh/" + solist.Order_Number);
+    }
+
+    Task SendMessage() => hubCon.SendAsync("SendMessage");
+
+    public void Dispose()
+    {
+        _ = hubCon.DisposeAsync();
+    }
+}

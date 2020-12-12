@@ -1,0 +1,118 @@
+﻿@page "/businesspartnerlist"
+@using Microsoft.AspNetCore.SignalR.Client
+@using WarehouseManagementSystem.Shared
+@using System.Text.Json
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h2>Business Partners</h2>
+<hr />
+<a href="/addbusinesspartner" class="btn btn-primary">Create new business partner</a>
+<hr />
+<div class="form-inline">
+    <label class="sr-only" for="search-ordernumber">Search</label>
+    <input type="text" class="form-control mb-2 mr-sm-2" @bind="searchcardcode" placeholder="Search card code" />
+    <button type="button" class="btn btn-primary mr-sm-2 mb-2" @onclick="Search">Search</button>
+</div>
+<hr />
+@if (bplist == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="font-size: small;">ID</th>
+                <th style="font-size: small;">Card code</th>
+                <th style="font-size: small;">Card name</th>
+                <th> </th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var biz in bplist)
+            {
+                <tr>
+                    <td style="font-size: small;">@biz.Id</td>
+                    <td style="font-size: small;">@biz.Card_Code</td>
+                    <td style="font-size: small;">@biz.Card_Name</td>
+                    <td>
+                        <a style="font-size: small;" href="/editbusinesspartner/@biz.Id" class="btn-sm btn-primary">Edit</a>
+                        <a style="font-size: small;" href="/deletebusinesspartner/@biz.Id" class="btn-sm btn-danger">Delete</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <Pagination TotalPagesQuantity="totalPageQuantity" CurrentPage="currentPage" Radius="2" SelectedPage="SelectedPage"></Pagination>
+}
+
+@code {
+    BusinessPartner[] bplist;
+
+    private int totalPageQuantity;
+    private int currentPage = 1;
+    private string searchcardcode = string.Empty;
+
+    private HubConnection hubCon;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubCon = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/ProjectHub"))
+            .Build();
+
+        hubCon.On("ReceiveMessage", () =>
+        {
+            CallLoadData();
+            StateHasChanged();
+        });
+
+        await hubCon.StartAsync();
+        await LoadData();
+    }
+
+    private void CallLoadData()
+    {
+        Task.Run(async () =>
+        {
+            await LoadData();
+        });
+    }
+
+    private async Task SelectedPage(int page)
+    {
+        currentPage = page;
+        await LoadData(page);
+    }
+
+    private async Task Search()
+    {
+        currentPage = 1;
+        await LoadData();
+    }
+
+    protected async Task LoadData(int page = 1, int quantityPerPage = 10)
+    {
+        var httpResponse = await Http.GetAsync($"api/BusinessPartners?page={page}&quantityPerPage={quantityPerPage}&card={searchcardcode}");
+
+        if (httpResponse.IsSuccessStatusCode)
+        {
+            totalPageQuantity = int.Parse(httpResponse.Headers.GetValues("pagesQuantity").FirstOrDefault());
+            var responseString = await httpResponse.Content.ReadAsStringAsync();
+            bplist = JsonSerializer.Deserialize<BusinessPartner[]>(responseString,
+                new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
+            StateHasChanged();
+        }
+        else
+        {
+            //Error handler
+        }
+    }
+
+    public void Dispose()
+    {
+        _ = hubCon.DisposeAsync();
+    }
+}

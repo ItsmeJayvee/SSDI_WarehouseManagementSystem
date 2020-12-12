@@ -1,0 +1,201 @@
+﻿@page "/editpurchaseorder/{id}"
+@using Microsoft.AspNetCore.SignalR.Client
+@using WarehouseManagementSystem.Shared
+@using System.Text.Json
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h2>Purchase order</h2>
+<hr />
+<p>Order number: <b>@po.Article_Doc</b></p>
+<p>Bill Document: <b>@po.Bill_Doc</b></p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Site</th>
+            <th>Item Code</th>
+            <th>Item Description</th>
+            <th>Quantity</th>
+            <th>Uom</th>
+            <th>Posting Date</th>
+            <th>Document Date</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (pd == null)
+        {
+            // do nothing
+        }
+        else
+        {
+            @foreach (var items in pd)
+            {
+                <tr>
+                    <td style="font-size: small">@items.Site</td>
+                    <td style="font-size: small">@items.Item_Code</td>
+                    <td style="font-size: small">@items.Item_Desc</td>
+                    <td style="font-size: small">@items.Quantity</td>
+                    <td style="font-size: small">@items.Uom</td>
+                    <td style="font-size: small">@items.Posting_Date.ToShortDateString()</td>
+                    <td style="font-size: small">@items.Document_Date.ToShortDateString()</td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+<hr />
+<div class="container">
+    <div class="row">
+        <div class="text-left col-md-12">
+            <h6><b>Insert purchase order Details:</b></h6>
+        </div>
+        <div class="form-inline">
+            <label class="sr-only" for="search-ordernumber">Search</label>
+            <input type="text" class="form-control mb-2 mr-sm-2" @bind="searchitemnum" placeholder="Search item number" />
+            <button type="button" class="btn btn-primary mr-sm-2 mb-2" @onclick="Search">Search</button>
+        </div>
+        <div class="col-md-12">
+            <hr />
+            <form>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="site" class="control-label" style="font-size: small;">Site</label>
+                            <select form="site" class="form-control" @bind="@pds.Site">
+                                <option value="" disabled selected>Select Site</option>
+                                @if (wh == null)
+                                {
+                                    <p><em>Loading...</em></p>
+                                }
+                                else
+                                {
+                                    @foreach (var item in wh)
+                                    {
+                                        <option value="@item.SiteCode">@item.SiteCode</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="prodname" class="control-label" style="font-size: small;">Posting Date</label>
+                            <input form="prodname" type="date" class="form-control" @bind="@pdate" />
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="packsize" class="control-label" style="font-size: small;">Document Date</label>
+                            <input form="packsize" type="date" class="form-control" @bind="@ddate" />
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="masterbrand" class="control-label" style="font-size: small;">Item Code</label>
+                            <input form="masterbrand" class="form-control" @bind="@artmas.Article_Code" />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="masterbrandname" class="control-label" style="font-size: small;">Item Description</label>
+                            <input form="masterbrandname" class="form-control" @bind="@artmas.Article_Description" />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="masterbasepack" class="control-label" style="font-size: small;">Quantity</label>
+                            <input form="masterbasepack" class="form-control" @bind="@artmas.Unit_Conversion2" />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label for="masterbasepackname" class="control-label" style="font-size: small;">Uom</label>
+                            <select form="masterbasepackname" class="form-control" @bind="@pds.Uom">
+                                <option value="" disabled selected>Select</option>
+                                <option value="CS">CS</option>
+                                <option value="PC">PC</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <input type="button" class="btn btn-success" @onclick="@insertsalesinvoice" value="Save" />
+                    <input type="button" class="btn btn-danger" @onclick="@cancel" value="Cancel" />
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@code {
+    ArticleMaster artmas = new ArticleMaster();
+    PurchaseHeaders po = new PurchaseHeaders();
+    PurchaseDetails pds = new PurchaseDetails();
+    Warehouse loc = new Warehouse();
+    Warehouse[] wh;
+    PurchaseDetails[] pd;
+
+    private HubConnection hubCon;
+
+    public string searchitemnum { get; set; }
+    public DateTime pdate { get; set; }
+    public DateTime ddate { get; set; }
+
+    [Parameter]
+    public string id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        po = await Http.GetJsonAsync<PurchaseHeaders>("api/PurchaseOrderHeadersIndex/" + id);
+        pd = await Http.GetJsonAsync<PurchaseDetails[]>("api/PurchaseOrderDetailsIndex/" + po.ID);
+        wh = await Http.GetJsonAsync<Warehouse[]>("api/Warehouse");
+
+        hubCon = new HubConnectionBuilder()
+        .WithUrl(NavigationManager.ToAbsoluteUri("/ProjectHub"))
+        .Build();
+
+        await hubCon.StartAsync();
+    }
+
+    public bool IsConnected =>
+        hubCon.State == HubConnectionState.Connected;
+
+    private async Task Search()
+    {
+        artmas = await Http.GetJsonAsync<ArticleMaster>("api/ArticleMasters/" + searchitemnum);
+        this.StateHasChanged();
+    }
+
+    public async Task insertsalesinvoice()
+    {
+        loc = await Http.GetJsonAsync<Warehouse>("api/Warehouse/" + pds.Site);
+
+        var InsertInventory = new Inventory { Date = Convert.ToDateTime(DateTime.Now.ToShortDateString()), Item_Code = artmas.Article_Code, Quantity = Convert.ToInt32(artmas.Unit_Conversion2), Transaction_Type = "Purchase Order", Uom = pds.Uom, Warehouse = pds.Site, Location = loc.SiteName };
+        await Http.PostJsonAsync("api/Inventory", InsertInventory);
+
+        var InsertInventoryHeader = new InventoryHeader { Date = Convert.ToDateTime(DateTime.Now.ToShortDateString()), Item_Code = artmas.Article_Code, Ref_ID = "Purchase Order" };
+        await Http.PostJsonAsync("api/InventoryHeaderIndex/" + artmas.Article_Code, InsertInventoryHeader);
+
+        var InsertInventoryDetails = new InventoryDetails { Header_Ref = artmas.Article_Code, Quantity = Convert.ToInt32(artmas.Unit_Conversion2), Transaction_Type = "Purchase Order", Uom = pds.Uom, Warehouse = pds.Site, Location = loc.SiteName };
+        await Http.PostJsonAsync("api/InventoryDetailsManual", InsertInventoryDetails);
+
+        var purchaseOrderDetails = new PurchaseDetails { Header_ID = po.ID, Site = pds.Site, Posting_Date = Convert.ToDateTime(pdate.ToShortDateString()), Document_Date = Convert.ToDateTime(ddate.ToShortDateString()), Item_Code = artmas.Article_Code, Item_Desc = artmas.Article_Description, Quantity = Convert.ToInt32(artmas.Unit_Conversion2), Uom = pds.Uom };
+        await Http.PostJsonAsync("api/PurchaseOrderDetailsIndex", purchaseOrderDetails);
+
+        if (IsConnected) await SendMessage();
+        NavigationManager.NavigateTo("refresh2/" + po.Article_Doc);
+    }
+
+    void cancel()
+    {
+        NavigationManager.NavigateTo("purchaseorderlist");
+    }
+
+    Task SendMessage() => hubCon.SendAsync("SendMessage");
+
+    public void Dispose()
+    {
+        _ = hubCon.DisposeAsync();
+    }
+
+}

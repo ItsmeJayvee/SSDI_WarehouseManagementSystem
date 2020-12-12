@@ -1,0 +1,118 @@
+﻿@page "/salesorderlist"
+@using Microsoft.AspNetCore.SignalR.Client
+@using WarehouseManagementSystem.Shared
+@using System.Text.Json
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+
+<h2>Sales order</h2>
+<hr />
+<a href="/addsalesorder" class="btn btn-primary">Create new sales order</a>
+<hr />
+<div class="form-inline">
+    <label class="sr-only" for="search-ordernumber">Search</label>
+    <input type="text" class="form-control mb-2 mr-sm-2" @bind="searchordernum" placeholder="Search order number" />
+    <button type="button" class="btn btn-primary mr-sm-2 mb-2" @onclick="Search">Search</button>
+</div>
+<hr />
+@if (solist == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="font-size: small;">ID</th>
+                <th style="font-size: small;">Order number</th>
+                <th style="font-size: small;">Sales order Date</th>
+                <th> </th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var so in solist)
+            {
+                <tr>
+                    <td style="font-size: small;">@so.ID</td>
+                    <td style="font-size: small;">@so.Order_Number</td>
+                    <td style="font-size: small;">@so.SO_Date.ToShortDateString()</td>
+                    <td>
+                        <a style="font-size: small;" href="/viewsalesorder/@so.Order_Number" class="btn-sm btn-info">View</a>
+                        <a style="font-size: small;" href="/editsalesorder/@so.Order_Number" class="btn-sm btn-primary">Edit</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <Pagination TotalPagesQuantity="totalPageQuantity" CurrentPage="currentPage" Radius="2" SelectedPage="SelectedPage"></Pagination>
+}
+
+@code {
+    SalesOrderHeaders[] solist;
+
+    private int totalPageQuantity;
+    private int currentPage = 1;
+    private string searchordernum = string.Empty;
+
+    private HubConnection hubCon;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubCon = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/ProjectHub"))
+            .Build();
+
+        hubCon.On("ReceiveMessage", () =>
+        {
+            CallLoadData();
+            StateHasChanged();
+        });
+
+        await hubCon.StartAsync();
+        await LoadData();
+    }
+
+    private void CallLoadData()
+    {
+        Task.Run(async () =>
+        {
+            await LoadData();
+        });
+    }
+
+    private async Task SelectedPage(int page)
+    {
+        currentPage = page;
+        await LoadData(page);
+    }
+
+    private async Task Search()
+    {
+        currentPage = 1;
+        await LoadData();
+    }
+
+    protected async Task LoadData(int page = 1, int quantityPerPage = 10)
+    {
+        var httpResponse = await Http.GetAsync($"api/SalesOrderHeadersIndex?page={page}&quantityPerPage={quantityPerPage}&order={searchordernum}");
+
+        if (httpResponse.IsSuccessStatusCode)
+        {
+            totalPageQuantity = int.Parse(httpResponse.Headers.GetValues("pagesQuantity").FirstOrDefault());
+            var responseString = await httpResponse.Content.ReadAsStringAsync();
+            solist = JsonSerializer.Deserialize<SalesOrderHeaders[]>(responseString,
+                new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
+            StateHasChanged();
+        }
+        else
+        {
+            //Error handler
+        }
+    }
+
+    public void Dispose()
+    {
+        _ = hubCon.DisposeAsync();
+    }
+}
