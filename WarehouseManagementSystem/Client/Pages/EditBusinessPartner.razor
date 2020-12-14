@@ -1,6 +1,7 @@
 ﻿@page "/editbusinesspartner/{id}"
 @using Microsoft.AspNetCore.SignalR.Client
 @using WarehouseManagementSystem.Shared
+@using System.Text.RegularExpressions  
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
 
@@ -48,15 +49,15 @@
             </div>
             <div class="form-group">
                 <label for="pjp" class="control-label">PJP</label>
-                <input form="pjp" class="form-control" @bind="@bp.PJP" />
+                <input form="pjp" class="form-control" @bind="@pjp" />
             </div>
             <div class="form-group">
                 <label for="salesman" class="control-label">Salesman</label>
-                <input form="salesman" class="form-control" @bind="@bp.Salesman" />
+                <input form="salesman" class="form-control" @bind="@salesman" />
             </div>
             <div class="form-group">
                 <label for="salesmanname" class="control-label">Salesman name</label>
-                <input form="salesmanname" class="form-control" @bind="@bp.Salesman_Name" />
+                <input form="salesmanname" class="form-control" @bind="@salesmanname" />
             </div>
             <div class="form-group">
                 <label for="street" class="control-label">Street</label>
@@ -259,9 +260,17 @@
     [Parameter]
     public string id { get; set; }
 
+    private string pjp { get; set; }
+    private string salesman { get; set; }
+    private string salesmanname { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
         bp = await Http.GetJsonAsync<BusinessPartner>("api/BusinessPartners/" + id);
+
+        pjp = bp.PJP.Replace('/', ' ');
+        salesman = bp.Salesman.Replace('/', ' ');
+        salesmanname = bp.Salesman_Name.Replace('/', ' ');
 
         hubCon = new HubConnectionBuilder()
             .WithUrl(NavigationManager.ToAbsoluteUri("/ProjectHub"))
@@ -275,7 +284,8 @@
 
     public async Task updatebusinesspartner()
     {
-        await Http.PutJsonAsync("api/BusinessPartners/" + id, bp);
+        var insertAll = new BusinessPartner { Card_Code = bp.Card_Code, Card_Name = bp.Card_Name, Card_Type = bp.Card_Type, Status = bp.Status, PJP = pjp, Salesman = salesman, Salesman_Name = salesmanname, Street = bp.Street, Street_2 = bp.Street_2, Street_3 = bp.Street_3, Outlet_Type = bp.Outlet_Type, Outlet_Type_Description = bp.Outlet_Type_Description, Outlet_Sub_Type = bp.Outlet_Sub_Type, Outlet_Sub_Type_Description = bp.Outlet_Sub_Type_Description, Phone = bp.Phone, Mobile = bp.Mobile, Payment_Type_Description = bp.Payment_Type_Description, Terms_of_Payment = bp.Terms_of_Payment, Terms_of_Payment_Description = bp.Terms_of_Payment_Description, Postal_Code = bp.Postal_Code, VAT_Number = bp.VAT_Number, Contact_Person = bp.Contact_Person, Classification = bp.Classification, Classification_Description = bp.Classification_Description, Delivering_Site = bp.Delivering_Site, Delivering_Site_Description = bp.Delivering_Site_Description, Lead_Time = bp.Lead_Time, MAG_Description = bp.MAG_Description, LSR_Level_Description = bp.LSR_Level_Description, LSR_Province_Description = bp.LSR_Province_Description, LSR_City_Description = bp.LSR_City_Description, LSR_Barangay_Description = bp.LSR_Barangay_Description, Deactivation_date = bp.Deactivation_date, Changed_date = bp.Changed_date, Payment_Type = bp.Payment_Type, Latitude = bp.Latitude, Longitude = bp.Longitude, Banner_ID_Description = bp.Banner_ID_Description, Email = bp.Email, Fax = bp.Fax, House_Number = bp.House_Number, Name2 = bp.Name2, Name3 = bp.Name3, Outlet_Location = bp.Outlet_Location, Search_Term1 = bp.Search_Term1, Search_Term2 = bp.Search_Term2, Tax1 = bp.Tax1, Created_On = bp.Created_On, Perfect_Store_Audit_Type = bp.Perfect_Store_Audit_Type, eRTM = bp.eRTM, Requestor = bp.Requestor };
+        await Http.PutJsonAsync("api/BusinessPartners/" + id, insertAll);
         if (IsConnected) await SendMessage();
         NavigationManager.NavigateTo("businesspartnerlist");
     }

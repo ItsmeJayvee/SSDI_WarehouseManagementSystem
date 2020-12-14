@@ -18,6 +18,14 @@
                 <input form="salesmanname" class="form-control" @bind="@sm.Salesman_Name" />
             </div>
             <div class="form-group">
+                <label for="salesmanname" class="control-label">Remarks</label>
+                <select form="salesmanname" class="form-control" @bind="@sm.Remarks">
+                    <option value="" disabled selected>Select</option>
+                    <option value="Sync to SAP">Sync to SAP</option>
+                    <option value="For SAP Update">For SAP Update</option>
+                </select>
+            </div>
+            <div class="form-group">
                 <label for="fsscode" class="control-label">FSS code</label>
                 <input form="fsscode" class="form-control" @bind="@sm.FSS_Code" />
             </div>
@@ -67,7 +75,21 @@
             </div>
             <div class="form-group">
                 <label for="site" class="control-label">Site</label>
-                <input form="site" class="form-control" @bind="@sm.Site" />
+                <select form="site" class="form-control" @bind="@sm.Site">
+                    <option value="" disabled selected>Select Site</option>
+                    <option value="4C48">4C48 - Sonic 1</option>
+                    <option value="4048">4048 - Sonic 2</option>
+                    <option value="4A48">4A48 - Sonic 3</option>
+                    <option value="4B48">4B48 - Sonic 3</option>
+                    <option value="4D48">4D48 - Sonic 3</option>
+                    <option value="4049">4049 - Food Solutions</option>
+                    <option value="4536">4536 - Selecta</option>
+                    <option value="4537">4537 - Selecta</option>
+                    <option value="1">1 - KOMEYA</option>
+                    <option value="2">2 - MERISANT</option>
+                    <option value="3">3 - GOODYEAR</option>
+                    <option value="4">4 - SUPERGREENS</option>
+                </select>
             </div>
             <div class="form-group">
                 <label for="salesmantypedesc" class="control-label">Salesman type description</label>
