@@ -7,7 +7,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Linq;
-using Microsoft.AspNetCore.Cors;
 using WarehouseManagementSystem.Server.Data;
 using WarehouseManagementSystem.Server.Hubs;
 
@@ -26,14 +25,6 @@ namespace WarehouseManagementSystem.Server
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddCors(options =>
-            {
-                options.AddPolicy("mypolicy", builder => {
-                    builder.WithOrigins("http://192.168.1.120:85", "http://localhost:54594", "http://localhost:50527")
-                    .AllowAnyHeader()
-                    .AllowAnyMethod();
-                });
-            });
             services.AddSignalR();
             services.AddControllersWithViews();
             services.AddRazorPages();
@@ -69,8 +60,6 @@ namespace WarehouseManagementSystem.Server
             app.UseStaticFiles();
 
             app.UseRouting();
-            
-            app.UseCors("mypolicy");
 
             app.UseEndpoints(endpoints =>
             {
