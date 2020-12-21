@@ -46,23 +46,21 @@ namespace SonicWarehouseManagement.Server.Controllers
 
         // GET: api/BusinessPartners/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<BusinessPartner>> GetBusinessPartner(int id)
+        public async Task<ActionResult<BusinessPartner>> GetBusinessPartner(string id)
         {
-            var businessPartner = await _context.Business_Partners.FindAsync(id);
+            var businessPartner = _context.Business_Partners.Where(x => x.Card_Code == id).FirstOrDefault();
 
             if (businessPartner == null)
             {
                 return NotFound();
             }
 
-            return businessPartner;
+            return Ok(businessPartner);
         }
 
         // GET: api/BusinessPartners/5
         [HttpGet("getbp/{id}")]
-#pragma warning disable CS1998 // This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread.
         public async Task<ActionResult<BusinessPartner>> GetBusinessPartner2(string id)
-#pragma warning restore CS1998 // This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread.
         {
             var businessPartner = _context.Business_Partners.Where(x => x.Card_Code == id).Distinct().FirstOrDefault();
 

@@ -34,6 +34,24 @@ namespace SonicWarehouseManagement.Server.Controllers
             return await _context.Upload.ToListAsync();
         }
 
+        [HttpGet("getcardcode/{cardcode}")]
+        public async Task<ActionResult<IEnumerable<Uploads>>> GetUpload(string cardcode)
+        {
+            return await _context.Upload.Where(x => x.Card_Code == cardcode).ToListAsync();
+        }
+
+        [HttpGet("getrequirements/{cardcode}")]
+        public async Task<ActionResult<IEnumerable<Uploads>>> GetRequirement(string cardcode)
+        {
+            var upload = _context.Upload.Where(x => x.Card_Code == cardcode).ToList();
+
+            if (upload == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(upload);
+        }
 
         // GET: api/Uploads/5
         [HttpGet("{id}")]
@@ -48,7 +66,6 @@ namespace SonicWarehouseManagement.Server.Controllers
 
             return upload;
         }
-
 
         // PUT: api/BusinessPartners/5
         // To protect from overposting attacks, enable the specific properties you want to bind to, for
@@ -89,6 +106,7 @@ namespace SonicWarehouseManagement.Server.Controllers
         {
             public IFormFile files { get; set; }
         }
+
         [HttpPost]
         public async Task<IActionResult> PostBPUpload([FromForm] FileUpload image)
         {
@@ -134,6 +152,7 @@ namespace SonicWarehouseManagement.Server.Controllers
             }
 
         }
+
         [HttpPost("postUpload")]
         public async Task<ActionResult<Uploads>> PostUploads(Uploads uploads)
         {
@@ -156,6 +175,49 @@ namespace SonicWarehouseManagement.Server.Controllers
             await _context.SaveChangesAsync();
 
             return uploads;
+        }
+        // DELETE: api/Uploads/5
+        [HttpDelete("deletedata/{filename}")]
+        public async Task<ActionResult<Uploads>> DeleteUploads(string filename)
+        {
+            var uploads = await _context.Upload.Where(x => x.Document == filename).FirstOrDefaultAsync();
+            if (uploads == null)
+            {
+                return NotFound();
+            }
+
+            _context.Upload.Remove(uploads);
+            await _context.SaveChangesAsync();
+
+            return uploads;
+        }
+
+        [HttpDelete("deleteUpload/{filename}")]
+        public async Task<ActionResult<Uploads>> DeleteFiles(string filename)
+        {
+            try
+            {
+                string path = Path.Combine(_environment.WebRootPath + "\\Uploads\\", filename);
+
+                if (System.IO.File.Exists(path))
+                {
+                    System.IO.File.Delete(path);
+                    return Ok("Deleted Successfully");
+                }
+                else
+                {
+                    return BadRequest("File not found");
+                }
+            }
+            catch (IOException)
+            {
+                return BadRequest("IO Exception = File not found");
+            }
+            catch (Exception)
+            {
+                return BadRequest("There was an error while deleting a file.");
+            }
+
         }
 
         private bool UploadsExists(int id)

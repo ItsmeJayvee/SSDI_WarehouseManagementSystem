@@ -1,14 +1,11 @@
-﻿@page "/businesspartnerlist"
+﻿@page "/pendingbp"
 @using Microsoft.AspNetCore.SignalR.Client
 @using WarehouseManagementSystem.Shared
 @using System.Text.Json
 @inject HttpClient Http
 @inject NavigationManager NavigationManager
 
-<h2>Business Partners</h2>
-<hr />
-<a href="/addbusinesspartner" class="btn btn-primary">Create new business partner</a>
-<a href="/pendingbp" class="btn btn-primary">View Pending Business Partners</a>
+<h2>Business Partners For Approval</h2>
 <hr />
 <div class="form-inline">
     <label class="sr-only" for="search-ordernumber">Search</label>
@@ -16,7 +13,7 @@
     <button type="button" class="btn btn-primary mr-sm-2 mb-2" @onclick="Search">Search</button>
 </div>
 <hr />
-@if (bplist == null)
+@if (pbp == null)
 {
     <p><em>Loading...</em></p>
 }
@@ -32,15 +29,14 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var biz in bplist)
+            @foreach (var biz in pbp)
             {
                 <tr>
                     <td style="font-size: small;">@biz.Id</td>
                     <td style="font-size: small;">@biz.Card_Code</td>
                     <td style="font-size: small;">@biz.Card_Name</td>
                     <td>
-                        <a style="font-size: small;" href="/editbusinesspartner/@biz.Card_Code" class="btn-sm btn-primary">View</a>
-                        <a style="font-size: small;" href="/deletebusinesspartner/@biz.Card_Code" class="btn-sm btn-danger">Delete</a>
+                        <a style="font-size: small;" href="/viewpendingbp/@biz.Card_Code" class="btn-sm btn-primary">View</a>
                     </td>
                 </tr>
             }
@@ -50,7 +46,7 @@ else
 }
 
 @code {
-    BusinessPartner[] bplist;
+    Pending_BP[] pbp;
 
     private int totalPageQuantity;
     private int currentPage = 1;
@@ -96,14 +92,14 @@ else
 
     protected async Task LoadData(int page = 1, int quantityPerPage = 10)
     {
-        var httpResponse = await Http.GetAsync($"api/BusinessPartners?page={page}&quantityPerPage={quantityPerPage}&card={searchcardcode}");
+        var httpResponse = await Http.GetAsync($"api/Pending_BP?page={page}&quantityPerPage={quantityPerPage}&card={searchcardcode}");
 
         if (httpResponse.IsSuccessStatusCode)
         {
             totalPageQuantity = int.Parse(httpResponse.Headers.GetValues("pagesQuantity").FirstOrDefault());
             var responseString = await httpResponse.Content.ReadAsStringAsync();
-            bplist = JsonSerializer.Deserialize<BusinessPartner[]>(responseString,
-                new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
+            pbp = JsonSerializer.Deserialize<Pending_BP[]>(responseString,
+            new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
             StateHasChanged();
         }
         else

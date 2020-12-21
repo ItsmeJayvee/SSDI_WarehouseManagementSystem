@@ -22,7 +22,7 @@ namespace SonicWarehouseManagement.Server.Controllers
             _context = context;
         }
 
-        // GET: api/BusinessPartners
+        // GET: api/Pending_BP
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Pending_BP>>> GetBusiness_Partners([FromQuery] SalesInvoicePagination pagination, [FromQuery] string card)
         {
@@ -35,7 +35,7 @@ namespace SonicWarehouseManagement.Server.Controllers
             return await queryable.Paginate(pagination).ToListAsync();
         }
 
-        // GET: api/BusinessPartners/totalBP
+        // GET: api/Pending_BP/totalBP
         [HttpGet("totalBP")]
         public async Task<ActionResult<IEnumerable<Pending_BP>>> GetBusiness_Partners_Count()
         {
@@ -44,7 +44,7 @@ namespace SonicWarehouseManagement.Server.Controllers
             return Ok(totalCount);
         }
 
-        // GET: api/BusinessPartners/5
+        // GET: api/Pending_BP/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Pending_BP>> GetBusinessPartner(int id)
         {
@@ -58,7 +58,7 @@ namespace SonicWarehouseManagement.Server.Controllers
             return businessPartner;
         }
 
-        // GET: api/BusinessPartners/5
+        // GET: api/Pending_BP/getbp/5
         [HttpGet("getbp/{id}")]
 #pragma warning disable CS1998 // This async method lacks 'await' operators and will run synchronously. Consider using the 'await' operator to await non-blocking API calls, or 'await Task.Run(...)' to do CPU-bound work on a background thread.
         public async Task<ActionResult<Pending_BP>> GetBusinessPartner2(string id)
@@ -74,7 +74,21 @@ namespace SonicWarehouseManagement.Server.Controllers
             return Ok(businessPartner);
         }
 
-        // PUT: api/BusinessPartners/5
+        // GET: api/Pending_BP/5
+        [HttpGet("getpendingbp/{id}")]
+        public async Task<ActionResult<Pending_BP>> GetPendingBP(string id)
+        {
+            var businessPartner = _context.Pending_BPs.Where(x => x.Card_Code == id).Distinct().FirstOrDefault();
+
+            if (businessPartner == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(businessPartner);
+        }
+
+        // PUT: api/Pending_BP/5
         // To protect from overposting attacks, enable the specific properties you want to bind to, for
         // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
         [HttpPut("updatebp/{id}")]
@@ -106,7 +120,7 @@ namespace SonicWarehouseManagement.Server.Controllers
             return NoContent();
         }
 
-        // POST: api/BusinessPartners
+        // POST: api/Pending_BP
         // To protect from overposting attacks, enable the specific properties you want to bind to, for
         // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
         [HttpPost]
@@ -134,7 +148,7 @@ namespace SonicWarehouseManagement.Server.Controllers
             return Ok("Duplicate");
         }
 
-        // DELETE: api/BusinessPartners/5
+        // DELETE: api/Pending_BP/5
         [HttpDelete("{id}")]
         public async Task<ActionResult<Pending_BP>> DeleteBusinessPartner(int id)
         {
