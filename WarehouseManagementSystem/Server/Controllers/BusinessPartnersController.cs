@@ -35,6 +35,11 @@ namespace SonicWarehouseManagement.Server.Controllers
             return await queryable.Paginate(pagination).ToListAsync();
         }
 
+        public async Task<ActionResult<IEnumerable<Discount>>> GetDiscounts()
+        {
+            return await _context.Discounts.ToListAsync();
+        }
+
         // GET: api/BusinessPartners/totalBP
         [HttpGet("totalBP")]
         public async Task<ActionResult<IEnumerable<BusinessPartner>>> GetBusiness_Partners_Count()

@@ -22,9 +22,9 @@ else
     <table class="table">
         <thead>
             <tr>
-                <th style="font-size: small;">ID</th>
                 <th style="font-size: small;">Card code</th>
                 <th style="font-size: small;">Card name</th>
+                <th style="font-size: small;">Status</th>
                 <th> </th>
             </tr>
         </thead>
@@ -32,9 +32,9 @@ else
             @foreach (var biz in pbp)
             {
                 <tr>
-                    <td style="font-size: small;">@biz.Id</td>
                     <td style="font-size: small;">@biz.Card_Code</td>
                     <td style="font-size: small;">@biz.Card_Name</td>
+                    <td style="font-size: small;">@biz.Status</td>
                     <td>
                         <a style="font-size: small;" href="/viewpendingbp/@biz.Card_Code" class="btn-sm btn-primary">View</a>
                     </td>
@@ -47,6 +47,7 @@ else
 
 @code {
     Pending_BP[] pbp;
+    
 
     private int totalPageQuantity;
     private int currentPage = 1;

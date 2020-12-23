@@ -34,6 +34,14 @@ namespace SonicWarehouseManagement.Server.Controllers
             await HttpContext.InsertPaginationParameterResponse(queryable, pagination.QuantityPerPage);
             return await queryable.Paginate(pagination).ToListAsync();
         }
+        // GET: api/Pending_BP/getTotalPending
+        [HttpGet("getTotalPending")]
+        public async Task<ActionResult<IEnumerable<Pending_BP>>> GetTotalPending()
+        {
+            var getTotal = _context.Pending_BPs.Count();
+
+            return Ok(getTotal);
+        }
 
         // GET: api/Pending_BP/totalBP
         [HttpGet("totalBP")]
@@ -88,7 +96,7 @@ namespace SonicWarehouseManagement.Server.Controllers
             return Ok(businessPartner);
         }
 
-        // PUT: api/Pending_BP/5
+        // PUT: api/Pending_BP/updatebp/5
         // To protect from overposting attacks, enable the specific properties you want to bind to, for
         // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
         [HttpPut("updatebp/{id}")]
@@ -108,6 +116,38 @@ namespace SonicWarehouseManagement.Server.Controllers
             catch (DbUpdateConcurrencyException)
             {
                 if (!BusinessPartnerExists(id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return NoContent();
+        }
+
+        // PUT: api/Pending_BP/updatebp/5
+        // To protect from overposting attacks, enable the specific properties you want to bind to, for
+        // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
+        [HttpPut("changestatus/{id}")]
+        public async Task<IActionResult> PutBusinessPartner(string id, Pending_BP businessPartner)
+        {
+            if (id != businessPartner.Card_Code)
+            {
+                return BadRequest();
+            }
+
+            _context.Entry(businessPartner).State = EntityState.Modified;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!BusinessPartnerExists2(id))
                 {
                     return NotFound();
                 }
@@ -167,6 +207,11 @@ namespace SonicWarehouseManagement.Server.Controllers
         private bool BusinessPartnerExists(int id)
         {
             return _context.Pending_BPs.Any(e => e.Id == id);
+        }
+
+        private bool BusinessPartnerExists2(string id)
+        {
+            return _context.Pending_BPs.Any(e => e.Card_Code == id);
         }
     }
 }

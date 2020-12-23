@@ -8,7 +8,7 @@
 <h2>Business Partners</h2>
 <hr />
 <a href="/addbusinesspartner" class="btn btn-primary">Create new business partner</a>
-<a href="/pendingbp" class="btn btn-primary">View Pending Business Partners</a>
+<a href="/pendingbp" class="btn btn-primary">Pending Business Partners <span class="badge bg-danger">@allPending</span></a>
 <hr />
 <div class="form-inline">
     <label class="sr-only" for="search-ordernumber">Search</label>
@@ -51,15 +51,22 @@ else
 
 @code {
     BusinessPartner[] bplist;
+    Pending_BP pbpCount = new Pending_BP();
 
     private int totalPageQuantity;
     private int currentPage = 1;
     private string searchcardcode = string.Empty;
+    private int allPending { get; set; }
 
     private HubConnection hubCon;
 
     protected override async Task OnInitializedAsync()
     {
+
+        var totalBP = await Http.GetAsync($"api/Pending_BP/totalBP");
+        var totalResponse = await totalBP.Content.ReadAsStringAsync();
+        allPending = Convert.ToInt32(totalResponse);
+
         hubCon = new HubConnectionBuilder()
             .WithUrl(NavigationManager.ToAbsoluteUri("/ProjectHub"))
             .Build();
